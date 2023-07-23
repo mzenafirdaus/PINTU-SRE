@@ -18,6 +18,6 @@ spec:
     spec: 
       containers: 
         - name: sample-apps
-          image: your-image:latest 
+          image: zenabar/nodejs:master 
           ports: 
-            - containerPort: 3000
+            - containerPort: 3001

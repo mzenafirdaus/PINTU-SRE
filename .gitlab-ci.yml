@@ -1,0 +1,45 @@
+image: node:16-alpine
+
+variables:
+  DOCKER_TLS_CERTDIR: "/certs"
+  PROJECT: nodejs-sample
+
+cache:
+  - key:
+      files:
+        - package-lock.json
+        - package.json
+    paths:
+      - node_modules/
+
+stages:
+  - install
+  - build
+
+yarn_install:
+  stage: install
+  script:
+    - yarn install --frozen-lockfile
+
+build_app:
+  stage: build
+  script:
+    - yarn build
+  artifacts:
+    paths:
+      - dist
+      - public
+    expire_in: 3h
+  needs: ["yarn_install"]
+
+docker-build:
+  image: docker:latest
+  stage: build
+  services:
+    - docker:dind
+  before_script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+  script:
+    - docker build --pull -t "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG" .
+    - docker push "$CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG"
+  needs: ["build_app"]

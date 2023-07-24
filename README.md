@@ -25,7 +25,10 @@ The . gitlab-ci. yml file defines scripts that should be run during the CI/CD pi
 
 in gitlab-ci.yaml, there are 2 stages, install and build, after successful build, the docker image will be pushed to the public registry, and the kubernetes manifest (deployment.yaml) will be pulled to run the app
 
-gitlab ci/cd is easy to use, accelerated time-to-value	
+gitlab ci/cd is easy to use, accelerated time-to-value
+
+Public Repository
+https://hub.docker.com/r/zenabar/nodejs/tags
 
 # Dockerfile
 

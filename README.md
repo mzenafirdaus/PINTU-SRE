@@ -1,92 +1,56 @@
-# Node Express Kubernetes Example
 
-Simple NodeJS application to explain basic parts of Kubernetes.
+# Pintu SRE Requirement
 
-* [Run simple Node.js application in Kubernetes cluster (DigitalOcean)](https://juffalow.com/blog/javascript/run-simple-node-application-in-kubernetes-cluster)
+PINTU <> Technical Assessment <> Site Reliability Engineer - WEB 3
 
-## Routes
+# kubernetes-manifest
 
-The `/app-id` route returns random string generated on application start, so that user can see if he is connecting to different pods (containers).
+A Kubernetes manifest file is personal guide through a Kubernetes cluster: A configuration file written in a format called YAML or JSON, that describes the resources for cluster.
 
-```json
-{"appId":"1.13.647"}
-```
+The YAML configuration is called a “manifest”, and when it is “applied” to a Kubernetes cluster, Kubernetes creates an object based on the configuration. A Kubernetes Deployment YAML specifies the configuration for a Deployment object—this is a Kubernetes object that can create and update a set of identical pods.
 
-Another request should return a different number in the end.
+In Kubernetes, a Service is a method for exposing a network application that is running as one or more Pods in cluster.
 
-```json
-{"appId":"1.13.539"}
-```
+# public
 
-The `/evn/:name` route returns environment variable as a proof that the application has access to values passed from *Kubernetes Secret*. For example you can try `/env/secretParameter`.
+The file public/index. html is a template that will be processed with html-webpack-plugin. During build, asset links will be injected automatically.
 
-```json
-{"secretParameter":"DatabaseCredentials"}
-```
+# .dockerignore
 
-## Test readiness probe
+dockerignore file for ignore files and folders in the docker build for developers. . dockerignore is a docker ignore file similar to a . gitignore file. It contains all files and folders to exclude during building the docker image.
 
-If starting of a *pod* can take some time, you can define a `readinessProbe`. This is also usable if the *pod* has some unfinished work and is not available to receive any other requests. The check in this case is set to http get, so if it returns http status code `200` kubernetes will include the *pod* and if it returns status code `500` it will exclude the *pod*.
+# .gitlab-ci.yaml
 
-You can test it by refreshing the page and checking the `appId` and then visit [http://&lt;IP address&gt;/ready/toggle](https://kubernetes.kontentino.dev/ready/toggle), which will toggle the readiness for 10 seconds. During this time one of the app ids should not occure again.
+The . gitlab-ci. yml file defines scripts that should be run during the CI/CD pipeline and their scheduling, additional configuration files and templates, dependencies, caches, commands GitLab should run sequentially or in parallel, and instructions on where the application should be deployed to.
 
-## Test liveness probe
+in gitlab-ci.yaml, there are 2 stages, install and build, after successful build, the docker image will be pushed to the public registry, and the kubernetes manifest (deployment.yaml) will be pulled to run the app
 
-If some fatal error occured or something else that actually blocked the whole process and the app is basically dead, the `livenessProbe` check detects it and restarts the *pod*. To see this in action, you need to check *pods*:
+gitlab ci/cd is easy to use, accelerated time-to-value	
 
-```shell
-kubectl get pods
-```
+# Dockerfile
 
-This will return:
+FROM node:16-alpine (This image is based on the popular Alpine Linux project, available in the alpine official image. Alpine Linux is much smaller than most distribution base images (~5MB), and thus leads to much slimmer images in general.) 
 
-```
-NAME                                                 READY   STATUS    RESTARTS   AGE
-node-docker-kubernetes-deployment-78f7d56b4b-2sg69   1/1     Running   0          5m37s
-node-docker-kubernetes-deployment-78f7d56b4b-d8n9h   1/1     Running   0          5m26s
-```
+ENV TZ UTC (timezone utc)
+WORKDIR /app (The WORKDIR instruction in a Dockerfile sets the current working directory for subsequent instructions in the Dockerfile.) 
 
-If you visit [http://&lt;IP address&gt;/alive/toggle](https://kubernetes.kontentino.dev/alive/toggle) and refresh the app a few times, one of the ids should not occure for a while. And if you check the *pods* again, the `restarts` info in one of the *pods* should show you `1`:
+RUN ln -snf /usr/share/zoneinfo/${TZ} /etc/localtime && \
+    echo ${TZ} > /etc/timezone (for setting timezone)
 
-```
-NAME                                                 READY   STATUS    RESTARTS   AGE
-node-docker-kubernetes-deployment-78f7d56b4b-2sg69   1/1     Running   1          5m37s
-node-docker-kubernetes-deployment-78f7d56b4b-d8n9h   1/1     Running   0          5m26s
-```
+RUN apk update && \ (make sure that the package list is up-to-date. So always get the latest version of the package want to install.)
+    apk -f upgrade &&\ 
+    apk add tini \ (Tini is a tiny and simplest init available for containers. It works by spawning a single child and waiting for it to exit while reaping the zombie processes as well as performing signal forwarding.)
+        curl \ (command line tool that enables data transfer over various network protocols)
+        openssl \ (OpenSSL is an open-source command line tool that is commonly used to generate private keys, create CSRs, install your SSL/TLS certificate, and identify certificate information.)
+        ca-certificates \ (A certificate authority (CA) is a trusted entity that issues Secure Sockets Layer (SSL) certificates. These digital certificates are data files used to cryptographically link an entity with a public key.)
+        bzip2 (bzip2 compresses data in blocks of size between 100 and 900 kB and uses the Burrows–Wheeler transform to convert frequently-recurring character sequences into strings of identical letters)
 
-## Test
+COPY --chown=node:node . . (change ownership to node:node)
 
-```js
-let number = 0;
+USER node
+EXPOSE 3001 ( container listens for traffic on the specified port)
 
-const load = async () => {
-  return fetch('https://node-test.kontentinoservices.dev/app-id')
-    .then(response => response.json())
-    .then((data) => {
-      console.log(`${number} App ID: ${data.appId}`);
-    });
-}
+ENTRYPOINT ["/sbin/tini", "--"]
+CMD [ "node", "dist/index.js" ]
 
-const sleep = async (ms) => {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-while (true) {
-  number++;
-  await load();
-  await sleep(1000);
-}
-```
-
-## Links
-
-* [Kubernetes Tutorial - Step by Step Introduction to Basic Concepts](https://auth0.com/blog/kubernetes-tutorial-step-by-step-introduction-to-basic-concepts/)
-* [Use Images in Your Registry with Kubernetes](https://www.digitalocean.com/docs/images/container-registry/quickstart/#use-images-in-your-registry-with-kubernetes)
-* [Docker best practices with Node.js](https://dev.to/nodepractices/docker-best-practices-with-node-js-4ln4)
-* [Node.js Best Practices - Docker](https://github.com/goldbergyoni/nodebestpractices/tree/master/sections/docker)
-
-## License
-
-[MIT license](./LICENSE)
+#       
